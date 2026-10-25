@@ -1,0 +1,219 @@
+{
+  "entities": {
+    "Product": {
+      "title": "Product",
+      "description": "Canonical hardware product identity standardized with an Indus Code",
+      "type": "object",
+      "properties": {
+        "indusCode": { "type": "string", "pattern": "^IDC-[A-Z]{3}-[0-9]{6}$", "description": "Permanent unique Indus Code" },
+        "canonicalName": { "type": "string", "maxLength": 200, "description": "Standardized title of the product" },
+        "description": { "type": "string", "maxLength": 2000, "description": "Technical description and intended application" },
+        "categoryId": { "type": "string", "maxLength": 64, "description": "Identifier of the primary category" },
+        "subcategoryId": { "type": "string", "maxLength": 64, "description": "Optional subcategory identifier" },
+        "specifications": { "type": "object", "description": "Key-value standardized technical specifications" },
+        "primaryImageUrl": { "type": "string", "maxLength": 1000, "description": "Primary product image URL" },
+        "manufacturerName": { "type": "string", "maxLength": 150, "description": "Original manufacturer or generic standard" },
+        "manufacturerPartNumber": { "type": "string", "maxLength": 100, "description": "Manufacturer MPN or model code" },
+        "externalIdentifiers": { "type": "array", "description": "External reference IDs or industry codes" },
+        "standards": { "type": "array", "description": "Documented standards such as IS, ISO, DIN, ASTM" },
+        "variantOf": { "type": "string", "maxLength": 128, "description": "Optional parent product document ID" },
+        "status": { "type": "string", "enum": ["draft", "pending", "approved", "rejected", "archived"] },
+        "createdBy": { "type": "string", "maxLength": 128, "description": "User ID of creator" },
+        "approvedBy": { "type": "string", "maxLength": 128, "description": "Admin UID who approved" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["indusCode", "canonicalName", "categoryId", "status"]
+    },
+    "ProductAlias": {
+      "title": "ProductAlias",
+      "description": "Local, vernacular or trade aliases mapping to a canonical product",
+      "type": "object",
+      "properties": {
+        "productId": { "type": "string", "maxLength": 128 },
+        "alias": { "type": "string", "maxLength": 200 },
+        "language": { "type": "string", "maxLength": 50 },
+        "region": { "type": "string", "maxLength": 100 },
+        "aliasType": { "type": "string", "enum": ["local_name", "trade_name", "synonym", "abbreviation"] },
+        "submittedBy": { "type": "string", "maxLength": 128 },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["productId", "alias", "aliasType", "status"]
+    },
+    "Category": {
+      "title": "Category",
+      "description": "Hardware category schema for grouping products and determining code prefix",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "maxLength": 100 },
+        "slug": { "type": "string", "maxLength": 100 },
+        "codePrefix": { "type": "string", "pattern": "^[A-Z]{3}$" },
+        "description": { "type": "string", "maxLength": 500 },
+        "parentCategoryId": { "type": "string", "maxLength": 64 },
+        "specificationSchema": { "type": "object" },
+        "active": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "slug", "codePrefix", "active"]
+    },
+    "Supplier": {
+      "title": "Supplier",
+      "description": "Verified manufacturer, wholesaler, distributor, or retailer profile",
+      "type": "object",
+      "properties": {
+        "ownerUserId": { "type": "string", "maxLength": 128 },
+        "businessName": { "type": "string", "maxLength": 200 },
+        "businessType": { "type": "string", "enum": ["manufacturer", "wholesaler", "distributor", "retailer"] },
+        "description": { "type": "string", "maxLength": 1500 },
+        "email": { "type": "string", "maxLength": 150 },
+        "phone": { "type": "string", "maxLength": 25 },
+        "address": { "type": "string", "maxLength": 300 },
+        "city": { "type": "string", "maxLength": 100 },
+        "district": { "type": "string", "maxLength": 100 },
+        "state": { "type": "string", "maxLength": 100 },
+        "pinCode": { "type": "string", "pattern": "^[1-9][0-9]{5}$" },
+        "serviceAreas": { "type": "array" },
+        "logoUrl": { "type": "string", "maxLength": 1000 },
+        "websiteUrl": { "type": "string", "maxLength": 500 },
+        "verificationStatus": { "type": "string", "enum": ["pending", "verified", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerUserId", "businessName", "businessType", "city", "state", "pinCode", "verificationStatus"]
+    },
+    "SupplierListing": {
+      "title": "SupplierListing",
+      "description": "A supplier's offer linking to a standardized canonical Indus Code product",
+      "type": "object",
+      "properties": {
+        "supplierId": { "type": "string", "maxLength": 128 },
+        "productId": { "type": "string", "maxLength": 128 },
+        "variantId": { "type": "string", "maxLength": 128 },
+        "sellerProductName": { "type": "string", "maxLength": 200 },
+        "sellerPartNumber": { "type": "string", "maxLength": 100 },
+        "price": { "type": "number" },
+        "currency": { "type": "string", "maxLength": 10 },
+        "unitOfSale": { "type": "string", "maxLength": 50 },
+        "minimumOrderQuantity": { "type": "number" },
+        "stockStatus": { "type": "string", "enum": ["in_stock", "limited_stock", "out_of_stock", "contact_supplier"] },
+        "stockQuantity": { "type": "number" },
+        "packagingDetails": { "type": "string", "maxLength": 300 },
+        "listingStatus": { "type": "string", "enum": ["pending", "approved", "rejected", "paused", "archived"] },
+        "lastStockUpdatedAt": { "type": "string", "format": "date-time" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["supplierId", "productId", "unitOfSale", "stockStatus", "listingStatus"]
+    },
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with role management",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "maxLength": 150 },
+        "email": { "type": "string", "maxLength": 150 },
+        "accountType": { "type": "string", "enum": ["buyer", "supplier", "admin"] },
+        "supplierId": { "type": "string", "maxLength": 128 },
+        "role": { "type": "string", "enum": ["user", "supplier", "admin"] },
+        "accountStatus": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["email", "role"]
+    },
+    "ProductRequest": {
+      "title": "ProductRequest",
+      "description": "Request submitted by a supplier or buyer when no matching Indus Code exists",
+      "type": "object",
+      "properties": {
+        "requestedBy": { "type": "string", "maxLength": 128 },
+        "proposedName": { "type": "string", "maxLength": 200 },
+        "description": { "type": "string", "maxLength": 2000 },
+        "categoryId": { "type": "string", "maxLength": 64 },
+        "proposedSpecifications": { "type": "object" },
+        "manufacturerPartNumber": { "type": "string", "maxLength": 100 },
+        "imageUrls": { "type": "array" },
+        "possibleMatches": { "type": "array" },
+        "reviewStatus": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "reviewNotes": { "type": "string", "maxLength": 1000 },
+        "reviewedBy": { "type": "string", "maxLength": 128 },
+        "allocatedIndusCode": { "type": "string", "maxLength": 64 },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["requestedBy", "proposedName", "categoryId", "reviewStatus"]
+    },
+    "Report": {
+      "title": "Report",
+      "description": "User report for incorrect specifications, duplicates, or supplier misconduct",
+      "type": "object",
+      "properties": {
+        "reportType": { "type": "string", "enum": ["incorrect_specs", "duplicate_record", "suspicious_supplier", "misleading_listing"] },
+        "targetType": { "type": "string", "enum": ["product", "supplier", "listing"] },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "targetName": { "type": "string", "maxLength": 200 },
+        "reporterId": { "type": "string", "maxLength": 128 },
+        "reporterEmail": { "type": "string", "maxLength": 150 },
+        "explanation": { "type": "string", "maxLength": 2000 },
+        "status": { "type": "string", "enum": ["open", "investigating", "resolved", "dismissed"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reportType", "targetType", "targetId", "explanation", "status"]
+    },
+    "AuditLog": {
+      "title": "AuditLog",
+      "description": "Immutable log of administrative operations and code assignments",
+      "type": "object",
+      "properties": {
+        "actorId": { "type": "string", "maxLength": 128 },
+        "actorEmail": { "type": "string", "maxLength": 150 },
+        "action": { "type": "string", "maxLength": 100 },
+        "targetEntity": { "type": "string", "maxLength": 100 },
+        "targetId": { "type": "string", "maxLength": 128 },
+        "details": { "type": "object" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["actorId", "action", "targetEntity", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/products/{productId}": {
+      "schema": "Product",
+      "description": "Standardized canonical hardware products"
+    },
+    "/productAliases/{aliasId}": {
+      "schema": "ProductAlias",
+      "description": "Regional and trade aliases for canonical products"
+    },
+    "/categories/{categoryId}": {
+      "schema": "Category",
+      "description": "Hardware category tree and spec schemas"
+    },
+    "/suppliers/{supplierId}": {
+      "schema": "Supplier",
+      "description": "Verified supplier profiles across India"
+    },
+    "/supplierListings/{listingId}": {
+      "schema": "SupplierListing",
+      "description": "Supplier inventory and commercial offerings"
+    },
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Registered user profile and identity mappings"
+    },
+    "/productRequests/{requestId}": {
+      "schema": "ProductRequest",
+      "description": "Requests for new Indus Code creation"
+    },
+    "/reports/{reportId}": {
+      "schema": "Report",
+      "description": "Community and supplier error reports"
+    },
+    "/auditLogs/{logId}": {
+      "schema": "AuditLog",
+      "description": "Administrative actions audit log"
+    }
+  }
+}

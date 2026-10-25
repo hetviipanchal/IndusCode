@@ -1,0 +1,6 @@
+{
+  "name": "INDUS CODE - National Hardware Identification & Supplier Discovery",
+  "description": "Standardized digital identity platform for hardware products and supplier discovery across India. Every Product. One Identity.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

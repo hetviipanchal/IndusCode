@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default deny all unknown collections
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Check if user is bootstrapped admin or exists in admins collection
+    function isAdmin() {
+      return isSignedIn() && (
+        request.auth.token.email == 'hetviipanchal11@gmail.com' ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Admins collection
+    match /admins/{adminId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // Categories
+    match /categories/{categoryId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Products (Canonical hardware products)
+    match /products/{productId} {
+      // Anyone can read approved products; authenticated users can read draft/pending if admin or creator
+      allow read: if resource.data.status == 'approved' ||
+                     (isSignedIn() && (isAdmin() || resource.data.createdBy == request.auth.uid));
+
+      // Only administrators can create or update canonical products
+      allow create: if isAdmin() &&
+                       incoming().indusCode is string &&
+                       incoming().canonicalName is string &&
+                       incoming().categoryId is string &&
+                       incoming().status in ['approved', 'draft', 'pending'];
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Product Aliases
+    match /productAliases/{aliasId} {
+      allow read: if resource.data.status == 'approved' || isAdmin();
+      allow create: if isSignedIn() && incoming().alias is string && incoming().productId is string;
+      allow update, delete: if isAdmin();
+    }
+
+    // Suppliers
+    match /suppliers/{supplierId} {
+      // Public can read verified suppliers
+      allow read: if resource.data.verificationStatus == 'verified' ||
+                     (isSignedIn() && (resource.data.ownerUserId == request.auth.uid || isAdmin()));
+
+      allow create: if isSignedIn() &&
+                       incoming().ownerUserId == request.auth.uid &&
+                       incoming().businessName is string &&
+                       incoming().verificationStatus in ['pending', 'verified'];
+
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (resource.data.ownerUserId == request.auth.uid &&
+         incoming().ownerUserId == existing().ownerUserId &&
+         // Supplier cannot self-verify
+         incoming().verificationStatus == existing().verificationStatus)
+      );
+
+      allow delete: if isAdmin();
+    }
+
+    // Supplier Listings
+    match /supplierListings/{listingId} {
+      // Public can read approved listings; supplier can read own
+      allow read: if resource.data.listingStatus == 'approved' ||
+                     (isSignedIn() && (resource.data.supplierId is string || isAdmin()));
+
+      allow create: if isSignedIn() &&
+                       incoming().supplierId is string &&
+                       incoming().productId is string &&
+                       incoming().unitOfSale is string &&
+                       incoming().stockStatus is string;
+
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (incoming().productId == existing().productId &&
+         incoming().supplierId == existing().supplierId)
+      );
+
+      allow delete: if isSignedIn() && (
+        isAdmin() ||
+        resource.data.supplierId is string
+      );
+    }
+
+    // Users
+    match /users/{userId} {
+      allow read: if isSignedIn() && (request.auth.uid == userId || isAdmin());
+      allow create: if isSignedIn() && request.auth.uid == userId;
+      allow update: if isSignedIn() && (
+        isAdmin() ||
+        (request.auth.uid == userId &&
+         incoming().role == existing().role)
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Product Requests
+    match /productRequests/{requestId} {
+      allow read: if isSignedIn() && (resource.data.requestedBy == request.auth.uid || isAdmin());
+      allow create: if isSignedIn() &&
+                       incoming().requestedBy == request.auth.uid &&
+                       incoming().proposedName is string &&
+                       incoming().reviewStatus in ['pending', 'approved', 'rejected'];
+      allow update: if isAdmin() || (
+        isSignedIn() &&
+        resource.data.requestedBy == request.auth.uid &&
+        existing().reviewStatus == 'pending' &&
+        incoming().reviewStatus == 'pending'
+      );
+      allow delete: if isAdmin();
+    }
+
+    // Reports
+    match /reports/{reportId} {
+      allow read: if isAdmin() || (isSignedIn() && resource.data.reporterId == request.auth.uid);
+      allow create: if incoming().reportType is string && incoming().explanation is string;
+      allow update, delete: if isAdmin();
+    }
+
+    // Audit Logs
+    match /auditLogs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Immutable audit log
+    }
+
+    // Counters (Used for server sequence allocation)
+    match /counters/{counterId} {
+      allow read: if true;
+      allow write: if isAdmin() || isSignedIn();
+    }
+  }
+}
